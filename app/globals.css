@@ -123,3 +123,16 @@
     @apply bg-background text-foreground;
   }
 }
+.searchbox {
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 10px;
+  
+}
+.search-item{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: lightblue;
+  padding: 10px;
+}
