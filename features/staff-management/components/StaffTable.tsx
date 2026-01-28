@@ -1,7 +1,8 @@
 "use client";
 
 import { useStaffs } from "../api/use-staff";
-import { Staff } from "@/entities/staff/types";
+import { useRoles, useBranches } from "../api/use-metadata";
+import { Role, Branch, Staff } from "@/entities/staff/types";
 import { getStaffImageUrl } from "@/shared/lib/image-utils";
 import Image from "next/image";
 import Searching from "@/components/searching";
@@ -19,41 +20,94 @@ export default function StaffTable() {
 
   const page = Number(searchParams.get("page")) || 1;
   const search = searchParams.get("search") || "";
+  const startDate = searchParams.get("startDate") || "";
+  const endDate = searchParams.get("endDate") || "";
 
-  const { data, isLoading, error } = useStaffs({ page, search });
+  const roleId = searchParams.get("roleId") || "";
+  const branchId = searchParams.get("branchId") || "";
+
+  const { data, isLoading, error } = useStaffs({
+    page,
+    search,
+    startDate,
+    endDate,
+    roleId,
+    branchId,
+  });
   const [selectedStaff, setSelectedStaff] = useState<{
     id: string;
     name: string;
   } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const { data: roles } = useRoles();
+  const { data: branches } = useBranches();
 
+  const roleOptions =
+    roles?.map((r: Role) => ({ label: r.role_name, value: r.id })) || [];
+  const branchOptions =
+    branches?.map((b: Branch) => ({ label: b.branch_name, value: b.id })) || [];
   const handleUpdateParams = useCallback(
-    (name: string, value: string | number) => {
+    (updates: Record<string, string | number | undefined>) => {
       const params = new URLSearchParams(searchParams.toString());
 
-      if (name === "search") {
-        const currentSearch = searchParams.get("search") || "";
-        if (value === currentSearch) return;
+      const isSearchChanged =
+        updates.search !== undefined &&
+        updates.search !== (searchParams.get("search") || "");
+      const isStartDateChanged =
+        updates.startDate !== undefined &&
+        updates.startDate !== (searchParams.get("startDate") || "");
+      const isEndDateChanged =
+        updates.endDate !== undefined &&
+        updates.endDate !== (searchParams.get("endDate") || "");
 
+      const isRoleChanged =
+        updates.roleId !== undefined &&
+        updates.roleId !== (searchParams.get("roleId") || "");
+      const isBranchChanged =
+        updates.branchId !== undefined &&
+        updates.branchId !== (searchParams.get("branchId") || "");
+
+      if (
+        isSearchChanged ||
+        isStartDateChanged ||
+        isEndDateChanged ||
+        isRoleChanged ||
+        isBranchChanged
+      ) {
         params.set("page", "1");
-        if (value) {
-          params.set("search", String(value));
-        } else {
-          params.delete("search");
-        }
-      } else {
-        if (value) {
+      }
+
+      Object.entries(updates).forEach(([name, value]) => {
+        if (value !== undefined && value !== "") {
           params.set(name, String(value));
         } else {
           params.delete(name);
         }
-      }
+      });
+
+      if (params.toString() === searchParams.toString()) return;
 
       replace(`${pathname}?${params.toString()}`);
     },
     [searchParams, pathname, replace],
   );
+  // const handleDateUpdate = useCallback(
+  //   (start: string, end: string) => {
+  //     handleUpdateParams({
+  //       startDate: start,
+  //       endDate: end,
+  //     });
+  //   },
+  //   [handleUpdateParams],
+  // );
+  // const handleReset = useCallback(() => {
+  //   // URL ကို မူလအတိုင်း /staff အဖြစ် ပြောင်းလိုက်မယ်
+  //   replace(pathname);
+  // }, [replace, pathname]);
+  const handleReset = () => replace(pathname);
+  const handleDateUpdate = (start: string, end: string) =>
+    handleUpdateParams({ startDate: start, endDate: end });
 
   if (isLoading)
     return <div className="p-8 text-center">Loading staffs...</div>;
@@ -94,9 +148,22 @@ export default function StaffTable() {
       <div className="search-item">
         <h2 className="text-xl font-semibold">Staff Searching</h2>
         <Searching
-          onSearch={(val) => handleUpdateParams("search", val)}
+          roleOptions={roleOptions}
+          branchOptions={branchOptions}
+          defaultRole={roleId}
+          defaultBranch={branchId}
+          onDateChange={handleDateUpdate} // Using it here
+          onReset={handleReset}
+          onFilterChange={(name, val) => handleUpdateParams({ [name]: val })}
+          onSearch={(val) => handleUpdateParams({ search: val })}
+          // onDateChange={(start, end) =>
+          //   handleUpdateParams({ startDate: start, endDate: end })
+          // }
           defaultValue={search}
-          placeholder="Search name, role or branch..."
+          defaultStart={startDate}
+          defaultEnd={endDate}
+          // onReset={() => replace(pathname)}
+          placeholder="Search name or phone..."
         />
       </div>
 
@@ -204,7 +271,7 @@ export default function StaffTable() {
             </div>
             <div className="flex items-center space-x-2">
               <button
-                onClick={() => handleUpdateParams("page", page - 1)}
+                onClick={() => handleUpdateParams({ page: page - 1 })}
                 disabled={page === 1}
                 className="h-8 w-8 flex items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-600 transition-all hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
               >
@@ -226,7 +293,7 @@ export default function StaffTable() {
               </button>
 
               <button
-                onClick={() => handleUpdateParams("page", page + 1)}
+                onClick={() => handleUpdateParams({ page: page + 1 })}
                 disabled={page >= (data?.totalPages || 1)}
                 className="h-8 w-8 flex items-center justify-center rounded-md border border-zinc-300 bg-white text-zinc-600 transition-all hover:bg-zinc-50 disabled:opacity-30 disabled:cursor-not-allowed shadow-sm"
               >

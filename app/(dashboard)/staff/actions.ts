@@ -43,7 +43,10 @@ export async function updateStaffAction(
     const err = await res.json();
     return { success: false, error: err.message || "Failed to update staff" };
   } catch (e) {
-    return { success: false, error: "Network error occurred" };
+    return {
+      success: false,
+      error: `Network error occurred! Error code : ${e}`,
+    };
   }
 }
 //delete
@@ -65,6 +68,9 @@ export async function deleteStaffAction(
     const err = await res.json();
     return { success: false, error: err.message || "Failed to delete staff" };
   } catch (e) {
-    return { success: false, error: "Network error occurred" };
+    return {
+      success: false,
+      error: `Network error occurred! Error code : ${e}`,
+    };
   }
 }
