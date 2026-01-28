@@ -6,17 +6,27 @@ import { getStaffImageUrl } from "@/shared/lib/image-utils";
 import Image from "next/image";
 import Searching from "@/components/searching";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
+import { deleteStaffAction } from "@/app/(dashboard)/staff/actions";
+import { useQueryClient } from "@tanstack/react-query";
+import DeleteConfirmModal from "@/components/deletemodel";
 
 export default function StaffTable() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const { replace } = useRouter();
+  const { replace, push } = useRouter();
+  const queryClient = useQueryClient();
 
   const page = Number(searchParams.get("page")) || 1;
   const search = searchParams.get("search") || "";
 
   const { data, isLoading, error } = useStaffs({ page, search });
+  const [selectedStaff, setSelectedStaff] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const handleUpdateParams = useCallback(
     (name: string, value: string | number) => {
@@ -52,6 +62,33 @@ export default function StaffTable() {
       <div className="p-8 text-red-500 text-center">Error fetching data</div>
     );
 
+  const handleEdit = (id: string) => {
+    push(`/staff/edit/${id}`);
+  };
+  const handleDelete = async (
+    e: React.MouseEvent,
+    id: string,
+    name: string,
+  ) => {
+    e.stopPropagation();
+    setSelectedStaff({ id, name });
+    setShowModal(true);
+  };
+  const handleConfirmDelete = async () => {
+    if (!selectedStaff) return;
+    setIsDeleting(true);
+
+    const result = await deleteStaffAction(selectedStaff.id);
+
+    if (result.success) {
+      queryClient.invalidateQueries({ queryKey: ["staffs"] });
+      setShowModal(false);
+    } else {
+      alert(result.error || "Failed to delete");
+    }
+    setIsDeleting(false);
+  };
+
   return (
     <div className="space-y-4 searchbox">
       <div className="search-item">
@@ -64,7 +101,7 @@ export default function StaffTable() {
       </div>
 
       <div className="rounded-md border overflow-hidden">
-        <table className="w-full text-sm">
+        <table>
           <thead className="bg-zinc-50 border-b">
             <tr>
               <th className="p-3 text-left">Staff Name</th>
@@ -76,12 +113,14 @@ export default function StaffTable() {
               <th className="p-3 text-left">Position</th>
               <th className="p-3 text-left">Image</th>
               <th className="p-3 text-left">Status</th>
+              <th className="p-3 text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
             {data?.data.map((staff: Staff) => (
               <tr
                 key={staff.id}
+                onClick={() => handleEdit(staff.id)}
                 className="border-b hover:bg-zinc-50 transition-colors"
               >
                 <td className="p-3 font-medium">{staff.staff_name}</td>
@@ -114,6 +153,29 @@ export default function StaffTable() {
                     {staff.status}
                   </span>
                 </td>
+                <td className="p-3 text-center">
+                  <button
+                    onClick={(e) => handleDelete(e, staff.id, staff.staff_name)}
+                    className="p-2 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all"
+                    title="Delete Staff"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                      <line x1="10" y1="11" x2="10" y2="17" />
+                      <line x1="14" y1="11" x2="14" y2="17" />
+                    </svg>
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -137,7 +199,7 @@ export default function StaffTable() {
           </div>
 
           <div className="flex items-center space-x-6 lg:space-x-8">
-            <div className="flex w-[100px] items-center justify-center text-sm font-medium text-zinc-600">
+            <div className="flex w-25 items-center justify-center text-sm font-medium text-zinc-600">
               Page {page} of {data?.totalPages || 1}
             </div>
             <div className="flex items-center space-x-2">
@@ -188,6 +250,14 @@ export default function StaffTable() {
           </div>
         </div>
       </div>
+      <DeleteConfirmModal
+        isOpen={showModal}
+        name={"Staff"}
+        onClose={() => setShowModal(false)}
+        onConfirm={handleConfirmDelete}
+        itemName={selectedStaff?.name || ""}
+        isLoading={isDeleting}
+      />
     </div>
   );
 }

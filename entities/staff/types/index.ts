@@ -5,9 +5,11 @@ export interface Staff {
   email: string;
   address: string;
   role: {
+    id: string;
     role_name: string;
   }
  branch: {
+    id:string;
     branch_name: string;
  }
   phone: string;

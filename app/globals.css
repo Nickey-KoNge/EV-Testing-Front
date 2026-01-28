@@ -136,3 +136,51 @@
   background-color: lightblue;
   padding: 10px;
 }
+.staff-main{
+  display: flex;
+  flex-direction: column;
+  
+}
+.staffmain{
+  display: flex;
+  justify-content: space-between;
+
+}
+.btn-register {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #2563eb; /* Professional Blue */
+  color: #ffffff;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-register:hover {
+  background-color: #1d4ed8;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.btn-register:active {
+  background-color: #1e40af;
+  transform: translateY(0px);
+}
+
+.btn-register svg {
+  width: 18px;
+  height: 18px;
+}
+
+.staff-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
